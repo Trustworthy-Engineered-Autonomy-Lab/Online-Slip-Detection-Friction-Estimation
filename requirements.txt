@@ -1,0 +1,5 @@
+# requirements.txt
+numpy>=1.19
+scikit-learn
+matplotlib
+pandas        # only if you process the Excel dataset
