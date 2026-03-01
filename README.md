@@ -23,4 +23,4 @@ Runtime outputs (useful for parsing)
 These prints are intended for downstream parsing and k-fold analysis.
 
 Dataset
-- An Excel file with all collected runs is included in the repo (place under `Data/Mu&OffsetData.xlsx` or update the README path to your workbook location).
+- An Excel file with all collected runs is included in the repo `Data/Mu&OffsetData.xlsx`.
