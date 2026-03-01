@@ -96,7 +96,7 @@ class DriftDetector(Node):
             self.linear_threshold = param_thresh
             self.get_logger().info(f"Using linear_threshold from parameter: {self.linear_threshold}")
         else:
-            thresh_path = '/home/coeltjen/f1tenth_ws/src/drift_detector/drift_detector/thresholds.txt'
+            thresh_path = '/home/<YOUR USER>/f1tenth_ws/src/drift_detector/drift_detector/thresholds.txt'
             if os.path.exists(thresh_path):
                 with open(thresh_path, 'r') as f:
                     line = f.readline().strip()
