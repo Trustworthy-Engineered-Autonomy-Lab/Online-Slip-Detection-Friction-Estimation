@@ -23,11 +23,18 @@ This repo contains a ROS2 node that detects slip (drift) events and estimates a 
 These prints are intended for downstream parsing and k-fold analysis.
 
 **Requirements**
-- Operating System: Ubuntu 20.04
-- Python 3.8 +
-- ROS2 Foxy
-- F1Tenth Stack
-  - Repo link: 'https://github.com/f1tenth/f1tenth_system'
+
+* Ubuntu 20.04
+* Python 3.8+
+* ROS 2 Foxy
+* F1Tenth stack – clone and build the ROS workspace as described in the
+  [F1Tenth getting‑started guide](https://f1tenth.readthedocs.io/en/stable/getting_started/firmware/drive_workspace.html#doc-drive-workspace):
+  ```bash
+  # create a drive workspace and clone the system repository
+  mkdir -p ~/f1tenth_ws/src
+  cd ~/f1tenth_ws/src
+  git clone https://github.com/f1tenth/f1tenth_system.git
+  # then `colcon build` from the workspace root, source the install/setup.bash, etc.
 
 **Dataset:**
 - `Data/Mu&OffsetData.xlsx` - an Excel file with all collected runs.
