@@ -5,7 +5,7 @@
   <version>0.1.0</version>
   <description>Lightweight algorithm for detecting the loss of traction and estimating the friction coefficient from LIDAR and IMU during autonomous racing</description>
   <maintainer email="f1tenth@todo.todo">f1tenth</maintainer>
-  <license>MIY</license>
+  <license>MIT</license>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
