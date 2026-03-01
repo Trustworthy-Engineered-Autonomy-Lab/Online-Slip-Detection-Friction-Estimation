@@ -31,7 +31,7 @@ These prints are intended for downstream parsing and k-fold analysis.
   ```
 * ROS 2 Foxy
 * F1Tenth stack – clone and build the ROS workspace as described in the
-  [F1Tenth getting‑started guide](https://f1tenth.readthedocs.io/en/stable/getting_started/firmware/drive_workspace.html#doc-drive-workspace):
+  [F1Tenth getting‑started guide](https://f1tenth.readthedocs.io/en/foxy_test/getting_started/firmware/drive_workspace.html):
   ```bash
   # create a drive workspace and clone the system repository
   mkdir -p ~/f1tenth_ws/src
