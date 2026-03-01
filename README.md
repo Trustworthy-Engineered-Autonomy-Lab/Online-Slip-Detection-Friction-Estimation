@@ -26,9 +26,9 @@ These prints are intended for downstream parsing and k-fold analysis.
 
 * Ubuntu 20.04
 * Python 3.8+
-```bash
-pip install -r requirements.txt
-```
+  ```bash
+  pip install -r requirements.txt
+  ```
 * ROS 2 Foxy
 * F1Tenth stack – clone and build the ROS workspace as described in the
   [F1Tenth getting‑started guide](https://f1tenth.readthedocs.io/en/stable/getting_started/firmware/drive_workspace.html#doc-drive-workspace):
