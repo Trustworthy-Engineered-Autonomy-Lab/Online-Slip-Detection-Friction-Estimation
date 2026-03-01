@@ -299,11 +299,11 @@ class DriftDetector(Node):
             linear = pd.DataFrame()
             linear['timestamps'] = self.linear_difference_timestamps
             linear['vals'] = self.linear_difference_vals
-            linear.to_csv('/home/mocha/f1tenth_ws/src/drift_detector/drift_detector/linaer.csv')
-            plt.savefig('/home/mocha/f1tenth_ws/src/drift_detector/drift_detector/linear_drift_estimates.png')
+            linear.to_csv('/home/<YOUR USER>/f1tenth_ws/src/drift_detector/drift_detector/linaer.csv')
+            plt.savefig('/home/<YOUR USER>/f1tenth_ws/src/drift_detector/drift_detector/linear_drift_estimates.png')
             plt.close()
 
-        thresh_path = '/home/coeltjen/f1tenth_ws/src/drift_detector/drift_detector/thresholds.txt'
+        thresh_path = '/home/<YOUR USER>/f1tenth_ws/src/drift_detector/drift_detector/thresholds.txt'
         if (not self.threshold_from_param) and self.linear_difference_vals and (not os.path.exists(thresh_path)):
             with open(thresh_path, 'w') as f:
                 f.write(f"{np.mean(self.linear_difference_vals) + 2*np.std(self.linear_difference_vals)}\n")
