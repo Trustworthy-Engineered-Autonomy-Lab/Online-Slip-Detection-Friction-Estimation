@@ -22,5 +22,8 @@ This repo contains a ROS2 node that detects slip (drift) events and estimates a 
   - Mus: list of recorded mu values per event (REMOVE_DRIFT_MUS)
 These prints are intended for downstream parsing and k-fold analysis.
 
+**Requirements**
+
+
 **Dataset:**
 - `Data/Mu&OffsetData.xlsx` - an Excel file with all collected runs.
