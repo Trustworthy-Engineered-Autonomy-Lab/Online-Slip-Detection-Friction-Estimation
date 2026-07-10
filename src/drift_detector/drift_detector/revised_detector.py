@@ -13,6 +13,7 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from collections import deque
 
 class DriftDetector(Node):
     def __init__(self):
@@ -75,6 +76,11 @@ class DriftDetector(Node):
         self.linear_difference_vals = []
         self.linear_difference_timestamps = []
 
+        # Store these so we can plot all three signals on shutdown
+        self.odomfil_comb_vals = []
+        self.odom_comb_vals = []
+        self.odom_comb_timestamps = []
+
         self.drifting = False
         self.linear = False
         self.drifting_timestamp = 0.0
@@ -83,30 +89,17 @@ class DriftDetector(Node):
         # ----------------------------
         # Threshold handling (PARAM > FILE > INF)
         # ----------------------------
-        self.linear_threshold = float('inf')
+        self.linear_threshold = 0.5196
+
+        self.linear_drift_filtered = 0.0
+        self.linear_drift_alpha = 0.95
+
+        self.linear_window = deque(maxlen=11)
 
         # Declare ROS2 parameter (lets you do: --ros-args -p linear_threshold:=0.123)
-        self.declare_parameter('linear_threshold', float('inf'))
-        param_thresh = float(self.get_parameter('linear_threshold').value)
 
         # Track whether threshold came from param (useful so we don't overwrite files during k-fold)
-        self.threshold_from_param = np.isfinite(param_thresh)
-
-        if self.threshold_from_param:
-            self.linear_threshold = param_thresh
-            self.get_logger().info(f"Using linear_threshold from parameter: {self.linear_threshold}")
-        else:
-            thresh_path = '/home/<YOUR USER>/f1tenth_ws/src/drift_detector/drift_detector/thresholds.txt'
-            if os.path.exists(thresh_path):
-                with open(thresh_path, 'r') as f:
-                    line = f.readline().strip()
-                    if line:
-                        self.linear_threshold = float(line)
-                        self.get_logger().info(f"Using linear_threshold from file: {self.linear_threshold}")
-                    else:
-                        self.get_logger().warn("thresholds.txt is empty; leaving linear_threshold=inf")
-            else:
-                self.get_logger().warn("No parameter and no thresholds.txt found; linear_threshold=inf")
+        self.threshold_from_param = False
 
         # --- accel-from-odom state ---
         self.prev_odomfil_t = None
@@ -201,9 +194,9 @@ class DriftDetector(Node):
                 ax = dvx_dt
                 ay = dvy_dt
 
-                ax = self.alpha * self.ax_f + (1.0 - self.alpha) * ax
-                ay = self.alpha * self.ay_f + (1.0 - self.alpha) * ay
-                self.ax_f, self.ay_f = ax, ay
+                # ax = self.alpha * self.ax_f + (1.0 - self.alpha) * ax
+                # ay = self.alpha * self.ay_f + (1.0 - self.alpha) * ay
+                # self.ax_f, self.ay_f = ax, ay
 
                 # self.linear_acceleration_x = ax
                 # self.linear_acceleration_y = ay
@@ -226,12 +219,30 @@ class DriftDetector(Node):
         if self.linear_acceleration_x == float('inf') or self.odom_linear_x == float('inf'):
             return
         
-        odomfil_comb = 2 * np.sqrt(self.odomfil_linear_x**2 + self.odomfil_linear_y**2)
-        odom_comb = 2 * np.sqrt(self.odom_linear_x**2 + self.odom_linear_y**2)
+        odomfil_comb = self.odomfil_linear_x
+        self.ax_f = self.alpha * self.ax_f + (1.0 - self.alpha) * self.odom_linear_x
+        odom_comb = self.odom_linear_x
         throttle = self.throttle
 
         # linear_drift_estimate acts as a slip value...dividing by odom_comb yields slip ratio
-        linear_drift_estimate = abs(odomfil_comb - odom_comb)
+        linear_drift_raw = abs(odomfil_comb - odom_comb) / (abs(odomfil_comb) + 3.4864)
+        # self.linear_window.append(linear_drift_raw)
+
+        # median = np.median(self.linear_window)
+        # mad = np.median(np.abs(np.array(self.linear_window) - median))
+
+        # if mad > 1e-6 and abs(linear_drift_raw - median) > 3.0 * 1.4826 * mad:
+        #     linear_drift_estimate = median
+        # else:
+        #     linear_drift_estimate = linear_drift_raw
+
+        linear_drift_estimate = linear_drift_raw
+
+        # Save aligned values every time check_drifting() runs successfully
+        self.odomfil_comb_vals.append(odomfil_comb)
+        self.odom_comb_vals.append(odom_comb)
+        self.odom_comb_timestamps.append(self.timestamp)
+
         self.linear_difference_vals.append(linear_drift_estimate)
         self.linear_difference_timestamps.append(self.timestamp)
 
@@ -263,11 +274,6 @@ class DriftDetector(Node):
             # mu_val = np.sqrt(self.linear_acceleration_x**2 + self.linear_acceleration_y**2) / y
             self.mus.append(mu_val)
 
-        # mu_val = np.sqrt(self.linear_acceleration_x**2 + self.linear_acceleration_y**2) / self.linear_acceleration_z
-        # # append new point
-        # self.mu_times.append(self.timestamp - self.initial_timestamp)
-        # self.mu_vals.append(mu_val)
-
         # # sort by time
         # sorted_pairs = sorted(zip(self.mu_times, self.mu_vals), key=lambda x: x[0])
         # self.mu_times, self.mu_vals = map(list, zip(*sorted_pairs))
@@ -291,19 +297,59 @@ class DriftDetector(Node):
         print('Times:', self.REMOVE_DRIFT_TIMES)
         print('Mus:', self.REMOVE_DRIFT_MUS)
         if self.linear_difference_vals:
-            plt.plot(self.linear_difference_vals)
             print(f"Sum of linear mean and standard deviation: {np.mean(self.linear_difference_vals) + 2*np.std(self.linear_difference_vals)}")
-            plt.title('Linear Drift Estimates')
-            plt.xlabel('Time Steps')
-            plt.ylabel('Linear Drift Estimate')
+
+            # Save plots in the same folder as this Python file
+            save_dir = os.path.dirname(os.path.abspath(__file__))
+
+            # Use relative time so the x-axis starts near 0 instead of ROS epoch time
+            t0 = self.odom_comb_timestamps[0]
+            time_s = np.array(self.odom_comb_timestamps) - t0
+
+            def save_signal_plot(x, y, title, ylabel, filename):
+                # Plot odomfil_comb and odom_comb together
+                plt.figure(figsize=(12, 5))
+                plt.plot(time_s, self.odomfil_comb_vals, label='odomfil_comb', linewidth=2)
+                plt.plot(time_s, self.odom_comb_vals, label='odom_comb', linewidth=2)
+                plt.title('odomfil_comb vs odom_comb')
+                plt.xlabel('Time (s)')
+                plt.ylabel('Velocity')
+                plt.grid(True)
+                plt.legend()
+                plt.tight_layout()
+
+                out_path = os.path.join(save_dir, 'odom_comparison.png')
+                plt.savefig(out_path, dpi=200)
+                plt.close()
+                print(f"Saved {out_path}")
+
+
+                # Plot linear_drift_estimate separately
+                plt.figure(figsize=(12, 5))
+                plt.plot(time_s, self.linear_difference_vals, linewidth=2)
+                plt.title('linear_drift_estimate')
+                plt.xlabel('Time (s)')
+                plt.ylabel('linear_drift_estimate')
+                plt.grid(True)
+                plt.tight_layout()
+
+                out_path = os.path.join(save_dir, 'linear_drift_estimate.png')
+                plt.savefig(out_path, dpi=200)
+                plt.close()
+                print(f"Saved {out_path}")
+
+            save_signal_plot(time_s, None, None, None, None)
             linear = pd.DataFrame()
             linear['timestamps'] = self.linear_difference_timestamps
-            linear['vals'] = self.linear_difference_vals
-            linear.to_csv('/home/<YOUR USER>/f1tenth_ws/src/drift_detector/drift_detector/linaer.csv')
-            plt.savefig('/home/<YOUR USER>/f1tenth_ws/src/drift_detector/drift_detector/linear_drift_estimates.png')
-            plt.close()
+            linear['time_s'] = np.array(self.linear_difference_timestamps) - self.linear_difference_timestamps[0]
+            linear['odomfil_comb'] = self.odomfil_comb_vals
+            linear['odom_comb'] = self.odom_comb_vals
+            linear['linear_drift_estimate'] = self.linear_difference_vals
+            csv_path = os.path.join(save_dir, 'linear_debug_signals.csv')
+            linear.to_csv(csv_path, index=False)
+            print(f"Saved {csv_path}")
 
-        thresh_path = '/home/<YOUR USER>/f1tenth_ws/src/drift_detector/drift_detector/thresholds.txt'
+        thresh_path = '/home/coeltjen/f1tenth_ws/src/drift_detector/drift_detector/thresholds.txt'
         if (not self.threshold_from_param) and self.linear_difference_vals and (not os.path.exists(thresh_path)):
             with open(thresh_path, 'w') as f:
                 f.write(f"{np.mean(self.linear_difference_vals) + 2*np.std(self.linear_difference_vals)}\n")
