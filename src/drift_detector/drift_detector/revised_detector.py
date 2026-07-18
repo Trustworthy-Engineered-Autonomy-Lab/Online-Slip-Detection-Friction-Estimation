@@ -349,11 +349,6 @@ class DriftDetector(Node):
             linear.to_csv(csv_path, index=False)
             print(f"Saved {csv_path}")
 
-        thresh_path = '/home/coeltjen/f1tenth_ws/src/drift_detector/drift_detector/thresholds.txt'
-        if (not self.threshold_from_param) and self.linear_difference_vals and (not os.path.exists(thresh_path)):
-            with open(thresh_path, 'w') as f:
-                f.write(f"{np.mean(self.linear_difference_vals) + 2*np.std(self.linear_difference_vals)}\n")
-
       
 def main(args=None):
     rclpy.init(args=args)
