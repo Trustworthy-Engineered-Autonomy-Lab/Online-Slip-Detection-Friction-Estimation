@@ -6,6 +6,9 @@ This repo contains a ROS2 node that detects slip (drift) events and estimates a 
 **Appendix:**
 `appendix.pdf` contains the appendix associated with the paper. It includes supplementary figures and further discussion into important topics slip-detection delay, safety implications, and the accuracy and limitations of the friction-coefficient estimates.
 
+**Video Demonstration:** 
+'ICVES_vid.mp4' is a video demonstration of the algorithm.
+
 **Key file:**
 - `src/drift_detector/drift_detector/revised_detector.py` — ROS2 Node that:
   - Subscribes to: /ackermann_cmd (AckermannDriveStamped), /odom (Odometry), /sensors/imu/raw (Imu), /odometry/filtered (Odometry)
