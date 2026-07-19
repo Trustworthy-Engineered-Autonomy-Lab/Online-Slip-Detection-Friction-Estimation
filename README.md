@@ -3,6 +3,9 @@
 **Purpose:**
 This repo contains a ROS2 node that detects slip (drift) events and estimates a representative friction coefficient (mu) from IMU + odometry data for experiments used in the associated paper.
 
+**Appendix:**
+`appendix.pdf` contains the appendix associated with the paper. It includes supplementary figures and further discussion into important topics slip-detection delay, safety implications, and the accuracy and limitations of the friction-coefficient estimates.
+
 **Key file:**
 - `src/drift_detector/drift_detector/revised_detector.py` — ROS2 Node that:
   - Subscribes to: /ackermann_cmd (AckermannDriveStamped), /odom (Odometry), /sensors/imu/raw (Imu), /odometry/filtered (Odometry)
